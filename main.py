@@ -12,7 +12,7 @@ thresholds = {
     "EAR_THRESH": 0.20,  # Eyes are considered closed if EAR is below this value.
     "WAIT_TIME": 3.0,    # Seconds closed to trigger the drowsiness alarm.
 }
-vid = cv2.VideoCapture(1)
+vid = cv2.VideoCapture(0)
 
 def video_frame_callback(frame):
     framex, play_alarm = video_handler.process(frame, thresholds)  # Process the frame
