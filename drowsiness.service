@@ -5,7 +5,7 @@ After=network.target
 [Service]
 User=pi
 WorkingDirectory=/home/ragpi/drowsy
-ExecStart=/usr/bin/python3 /home/ragpi/drowsy/start_drowsiness.py
+ExecStart=/home/ragpi/drowsy/.venv/bin/python3 /home/ragpi/drowsy/start_drowsiness.py
 Restart=always
 RestartSec=10
 Environment=DISPLAY=:0
