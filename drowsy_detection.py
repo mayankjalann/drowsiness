@@ -8,11 +8,21 @@ import subprocess
 from mediapipe.python.solutions.drawing_utils import _normalized_to_pixel_coordinates as denormalize_coordinates
 
 # Set the full path to your custom audio file.
-AUDIO_FILE = "/Users/mayank/Desktop/DT/beep-beep-beep-beep-80262.aiff"
+# On your Raspberry Pi, update this path if needed.
+AUDIO_FILE = "/home/ragpi/drowsy/beep1.mp3"
 
-# Import winsound on Windows for beep functionality.
+# Initialize platform-specific audio modules.
 if platform.system() == "Windows":
     import winsound
+elif platform.system() == "Linux":
+    try:
+        import pygame
+        pygame.init()
+        pygame.mixer.init()
+        BEEP_SOUND = pygame.mixer.Sound(AUDIO_FILE)
+    except Exception as e:
+        print("Error initializing pygame for audio:", e)
+        BEEP_SOUND = None
 
 def get_mediapipe_app(
     max_num_faces=1,
@@ -44,20 +54,21 @@ def get_ear(landmarks, refer_idxs, frame_width, frame_height):
         P1_P4 = distance(coords_points[0], coords_points[3])
         ear = (P2_P6 + P3_P5) / (2.0 * P1_P4)
     except Exception as e:
+        print("Error in get_ear:", e)
         ear = 0.0
         coords_points = None
     return ear, coords_points
 
 def calculate_avg_ear(landmarks, left_eye_idxs, right_eye_idxs, image_w, image_h):
-    left_ear, left_lm_coordinates = get_ear(landmarks, left_eye_idxs, image_w, image_h)
-    right_ear, right_lm_coordinates = get_ear(landmarks, right_eye_idxs, image_w, image_h)
+    left_ear, left_coords = get_ear(landmarks, left_eye_idxs, image_w, image_h)
+    right_ear, right_coords = get_ear(landmarks, right_eye_idxs, image_w, image_h)
     Avg_EAR = (left_ear + right_ear) / 2.0
-    return Avg_EAR, (left_lm_coordinates, right_lm_coordinates)
+    return Avg_EAR, (left_coords, right_coords)
 
-def plot_eye_landmarks(frame, left_lm_coordinates, right_lm_coordinates, color):
-    for lm_coordinates in [left_lm_coordinates, right_lm_coordinates]:
-        if lm_coordinates:
-            for coord in lm_coordinates:
+def plot_eye_landmarks(frame, left_coords, right_coords, color):
+    for coords in [left_coords, right_coords]:
+        if coords:
+            for coord in coords:
                 cv2.circle(frame, coord, 2, color, -1)
     # Flip the frame for a selfie-view display.
     frame = cv2.flip(frame, 1)
@@ -77,7 +88,11 @@ class VideoFrameHandler:
         self.GREEN = (0, 255, 0)  # Color for open/alert state.
 
         # Initialize Mediapipe FaceMesh model.
-        self.facemesh_model = get_mediapipe_app()
+        try:
+            self.facemesh_model = get_mediapipe_app()
+        except Exception as e:
+            print("Error initializing Mediapipe FaceMesh:", e)
+            exit()
 
         # State tracker for drowsiness.
         self.state_tracker = {
@@ -115,20 +130,20 @@ class VideoFrameHandler:
 
         if results.multi_face_landmarks:
             landmarks = results.multi_face_landmarks[0].landmark
-            EAR, coordinates = calculate_avg_ear(
+            EAR, coords = calculate_avg_ear(
                 landmarks,
                 self.eye_idxs["left"],
                 self.eye_idxs["right"],
                 frame_w,
                 frame_h,
             )
-            frame = plot_eye_landmarks(frame, coordinates[0], coordinates[1], self.state_tracker["COLOR"])
+            frame = plot_eye_landmarks(frame, coords[0], coords[1], self.state_tracker["COLOR"])
 
             # ----- Blink Detection -----
             if EAR < thresholds["EAR_THRESH"]:
                 self.closed_frames += 1
             else:
-                # When eyes reopen, if the closure was short enough, count as a blink.
+                # Count as a blink if eyes were closed for a short period.
                 if 0 < self.closed_frames <= self.BLINK_CONSEC_FRAMES:
                     self.blink_counter += 1
                 self.closed_frames = 0
@@ -163,13 +178,13 @@ class VideoFrameHandler:
             EAR_txt = f"Probability: {round(EAR, 2)}"
             DROWSY_TIME_txt = f"Drowsy: {round(self.state_tracker['DROWSY_TIME'], 3)} Secs"
             blink_txt = f"Blinks: {self.blink_counter}"
-            blink_rate_txt = f"Blink Rate: {blink_rate} BPM" if isinstance(blink_rate, str) else f"Blink Rate: {blink_rate} BPM"
+            blink_rate_txt = f"Blink Rate: {blink_rate} BPM"
             plot_text(frame, EAR_txt, self.EAR_txt_pos, self.state_tracker["COLOR"])
             plot_text(frame, DROWSY_TIME_txt, DROWSY_TIME_txt_pos, self.state_tracker["COLOR"])
             plot_text(frame, blink_txt, (10, 100), self.state_tracker["COLOR"])
             plot_text(frame, blink_rate_txt, (10, 140), self.state_tracker["COLOR"])
         else:
-            # Reset timers and simply flip the frame if no face is detected.
+            # Reset timers if no face is detected.
             self.state_tracker["start_time"] = current_time
             self.state_tracker["DROWSY_TIME"] = 0.0
             self.state_tracker["COLOR"] = self.GREEN
@@ -177,7 +192,6 @@ class VideoFrameHandler:
             frame = cv2.flip(frame, 1)
 
         # ----- Beep Sound Trigger -----
-        # Now, beep if either the drowsiness alarm or the low blink rate condition is active.
         if self.state_tracker["play_alarm"] or low_blink_alarm:
             if current_time - self.last_beep_time >= 1:
                 try:
@@ -185,6 +199,11 @@ class VideoFrameHandler:
                         winsound.Beep(1000, 200)
                     elif platform.system() == "Darwin":
                         subprocess.Popen(["afplay", AUDIO_FILE])
+                    elif platform.system() == "Linux":
+                        if 'BEEP_SOUND' in globals() and BEEP_SOUND:
+                            BEEP_SOUND.play()
+                        else:
+                            subprocess.Popen(["aplay", AUDIO_FILE])
                     else:
                         os.system('echo -n "\a"')
                 except Exception as e:
@@ -193,26 +212,31 @@ class VideoFrameHandler:
 
         return frame, self.state_tracker["play_alarm"]
 
-# Example usage:
 if __name__ == "__main__":
     # Define thresholds for EAR and wait time (seconds).
     thresholds = {
         "EAR_THRESH": 0.25,
         "WAIT_TIME": 2.0,  # seconds of eyes closed before alarm is triggered
     }
-    
+
     video_handler = VideoFrameHandler()
     cap = cv2.VideoCapture(0)
-    
+
+    if not cap.isOpened():
+        print("Error: Unable to open video capture device.")
+        exit()
+
+    print("Starting video capture. Press 'q' to quit.")
     while True:
         ret, frame = cap.read()
         if not ret:
+            print("Error: Unable to read frame from camera.")
             break
-        
+
         processed_frame, alarm_on = video_handler.process(frame, thresholds)
         cv2.imshow("Drowsiness Detector", processed_frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-    
+
     cap.release()
     cv2.destroyAllWindows()
