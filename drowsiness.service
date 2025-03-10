@@ -1,0 +1,15 @@
+[Unit]
+Description=Drowsiness Detection Service
+After=network.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/ragpi/drowsy
+ExecStart=/usr/bin/python3 /home/ragpi/drowsy/start_drowsiness.py
+Restart=always
+RestartSec=10
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/pi/.Xauthority
+
+[Install]
+WantedBy=multi-user.target
