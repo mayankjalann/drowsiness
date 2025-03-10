@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h3 id="hi">Mayank</h3>
+    <script>
+        let m=document.createElement('h1');
+        m.textContent="Mayank";
+        let ele=document.getElementById('hi');
+        let boo=ele.value;
+        ele.textContent=ele.textContent+"hi";
+        ele.insertAdjacentElement('beforebegin',m);
+    </script>
+</body>
+</html>

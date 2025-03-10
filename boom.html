@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    .calcualtor{
+        width:400px;
+        height:600px;
+        background-color:black;
+        border-radius:4px;
+    }
+    .display{
+        width:98%;
+        height:50px;
+    }
+    .buttons{
+        display:grid;
+        grid-template-columns: repeat(3,1fr);
+    }
+    button{
+        width:100px;
+        height:100px;
+        border-radius:50%;
+        font-size:30px;
+    }
+</style>
+<body>
+    <div class="calcualtor">
+        <input type="text" class="display" readonly>
+        <div class="buttons">
+            <button onclick="clearscreen()">AC</button>
+            <button onclick="append('/')">/</button>
+            <button onclick="append('*')">x</button>
+            <button onclick="append('7')">7</button>
+            <button onclick="append('8')">8</button>
+            <button onclick="append('9')">9</button>
+            <button onclick="append('4')">4</button>
+            <button onclick="append('5')">5</button>
+            <button onclick="append('6')">6</button>
+            <button onclick="append('1')">1</button>
+            <button onclick="append('2')">2</button>
+            <button onclick="append('3')">3</button>
+            <button onclick="append('0')">0</button>
+            <button onclick="append('.')">.</button>
+            <button onclick="displayall()">=</button>    
+        </div>
+    </div>
+    <script>
+        const val=document.querySelector('.display');
+        function append(v){
+            val.value+=v;
+        }
+        function clearscreen(){
+            val.value='';
+        }
+        function displayall(){
+            val.value=eval(val.value);
+        }
+       
+        
+    </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <input id="b" placeholder="Enter the movie">
+    <button id="add">ADD MOVIE</button>
+    <button id="del">DEL</button>
+    
+    <ul id="hi">
+
+    </ul>
+    <script>
+
+function clear(){
+            let list=document.getElementById('hi');
+            list.textContent='';
+          
+        }
+        function add(){
+            let val=document.getElementById('b').value;
+            let list=document.getElementById('hi');
+            
+            let delBtn = document.createElement('button');
+            delBtn.textContent = "Del";
+            
+            // Add event listener to remove only this specific list item
+            delBtn.addEventListener('click', function() {
+                li.remove();
+            });
+            
+        }
+        
+        let btn=document.getElementById('add');
+        btn.addEventListener('click',add);
+
+        
+        
+        let btn1=document.getElementById('del');
+        btn1.addEventListener('click',clear);
+
+    
+    </script>
+</body>
+</html>
