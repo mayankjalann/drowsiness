@@ -201,13 +201,33 @@ class VideoFrameHandler:
                         subprocess.Popen(["afplay", AUDIO_FILE])
                     elif platform.system() == "Linux":
                         if 'BEEP_SOUND' in globals() and BEEP_SOUND:
-                            BEEP_SOUND.play()
+                            try:
+                                BEEP_SOUND.play()
+                            except Exception:
+                                # Fallback methods for headless Pi
+                                try:
+                                    # Try using system beep
+                                    os.system('echo -e "\a"')
+                                except:
+                                    # Last resort - just log it
+                                    pass
                         else:
-                            subprocess.Popen(["aplay", AUDIO_FILE])
+                            try:
+                                # Try different audio players
+                                subprocess.Popen(["aplay", "-q", AUDIO_FILE], 
+                                                stderr=subprocess.DEVNULL)
+                            except:
+                                try:
+                                    subprocess.Popen(["mpg123", "-q", AUDIO_FILE], 
+                                                    stderr=subprocess.DEVNULL)
+                                except:
+                                    # If all audio methods fail, just log
+                                    pass
                     else:
-                        os.system('echo -n "\a"')
+                        os.system('echo -e "\a"')
                 except Exception as e:
-                    print("Beep error:", e)
+                    # Don't print to console, just continue
+                    pass
                 self.last_beep_time = current_time
 
         return frame, self.state_tracker["play_alarm"]

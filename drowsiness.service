@@ -4,6 +4,7 @@ After=network.target
 
 [Service]
 User=ragpi
+Group=audio
 WorkingDirectory=/home/ragpi/drowsy
 ExecStart=/home/ragpi/drowsy/.venv/bin/python3 /home/ragpi/drowsy/start_drowsiness.py
 Restart=always
